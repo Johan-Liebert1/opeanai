@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,6 +16,8 @@ import (
 )
 
 var SpewPrinter = spew.ConfigState{Indent: "    ", MaxDepth: 5}
+
+const inputSubsFileName = "./142-jap.srt"
 
 // var prompt string = `I'll provide you with a Japanese text to you in a JSON array. Your job is to convert the Japanese text to hiragana (with spaces) plus romaji plus its English translation.
 // Do not include the original Japanese text, only the Hiragana, Romaji and the English translation.
@@ -96,7 +99,12 @@ func sendOpenAIRequest(body OpenAIAPIRequest) (GPTResponse, error) {
 		return gptResponse, err
 	}
 
-	req, err := http.NewRequest(
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(
+		ctx,
 		http.MethodPost,
 		"https://api.openai.com/v1/chat/completions",
 		bytes.NewBuffer(bodyBytes),
@@ -305,15 +313,18 @@ func main() {
 	isJson := false
 
 	batchSize := 15
-	currentBatch := 294
+	currentBatch := 0
 
-	subs := getSubtitles("./78-jap.srt")
+	subs := getSubtitles(inputSubsFileName)
 
 	if subs == nil {
 		return
 	}
 
 	newSubtitlesStringArray := []string{}
+
+	errCount := 0
+	retriesThreshold := 5
 
 	for currentBatch < len(subs.Items) {
 		start := currentBatch * batchSize
@@ -353,11 +364,20 @@ func main() {
 		})
 
 		if err != nil {
+			errCount++
+
 			SpewPrinter.Dump(resp)
 			fmt.Println(err)
-			writeSubsStringArrayToFile(newSubtitlesStringArray, start-batchSize, start-1)
-			return
+
+			if errCount >= retriesThreshold {
+				writeSubsStringArrayToFile(newSubtitlesStringArray, start-batchSize, start-1)
+				return
+			}
+
+			continue
 		}
+
+		errCount = 0
 
 		content := resp.Choices[0].Message.Content
 
