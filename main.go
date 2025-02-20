@@ -15,80 +15,16 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
+type SubsFileType = string
+
+const (
+	SubsFileTypeSRT = "srt"
+	SubsFileTypeASS = "ass"
+)
+
 var SpewPrinter = spew.ConfigState{Indent: "    ", MaxDepth: 5}
 
-const inputSubsFileName = "./142-jap.srt"
-
-// var prompt string = `I'll provide you with a Japanese text to you in a JSON array. Your job is to convert the Japanese text to hiragana (with spaces) plus romaji plus its English translation.
-// Do not include the original Japanese text, only the Hiragana, Romaji and the English translation.
-// ALWAYS CONVERT THE ENTIRE TEXT. DO NOT WRITE ANYTHING OTHER THAN THE OUTPUT JSON ARRAY, THERE SHOULDN'T BE ANY COMMENTS AT ALL.
-// DON'T GIVE ME MARKDOWN OR ANY OTHER FORMAT, I WANT A PLAIN JSON ARRAY IN TEXT FORMAT.
-// Example - INPUT = [ "私" ], output = ["わたし\nwatashi\nI"].
-// DO NOT DO ANYTHING OTHER THAN WHAT I'VE SPECIFIED. ALWAYS FOLLOW THE EXAMPLE I'VE GIVEN YOU. DO NOT GIVE ME A LIST OF DICTIONARIES ETC ETC.` + "DO NOT FORMAT THE TEXT AS ```json```"
-
-var prompt string = `
-I'll provide you with a Japanese text. Your job is to convert the Japanese text to hiragana (with spaces) plus romaji plus its English translation.
-If the provided text is not Japanese, return it as is.
-Do not include the original Japanese text, only the Hiragana, Romaji and the English translation.
-ALWAYS CONVERT THE ENTIRE TEXT. DON'T GIVE ME MARKDOWN OR ANY OTHER FORMAT, I WANT THE ANSWER IN PLAIN TEXT FORMAT. 
-Example - INPUT = "私", OUTPUT = "わたし\nwatashi\nI". 
-DO NOT GIVE ME MARKDOWN.`
-
-type RequestMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type OpenAIAPIRequest struct {
-	Model    string           `json:"model"`
-	Store    bool             `json:"store"`
-	Messages []RequestMessage `json:"messages"`
-}
-
-// GPTResponse represents the structure of the API response
-type GPTResponse struct {
-	Choices           []Choice `json:"choices"`
-	Created           float64  `json:"created"`
-	ID                string   `json:"id"`
-	Model             string   `json:"model"`
-	Object            string   `json:"object"`
-	ServiceTier       string   `json:"service_tier"`
-	SystemFingerprint string   `json:"system_fingerprint"`
-	Usage             Usage    `json:"usage"`
-}
-
-// Choice represents each choice returned in the response
-type Choice struct {
-	FinishReason string  `json:"finish_reason"`
-	Index        int     `json:"index"`
-	Logprobs     *string `json:"logprobs"`
-	Message      Message `json:"message"`
-}
-
-// Message represents the message content in the response
-type Message struct {
-	Content string  `json:"content"`
-	Refusal *string `json:"refusal"`
-	Role    string  `json:"role"`
-}
-
-// Usage represents token usage details
-type Usage struct {
-	CompletionTokens        int          `json:"completion_tokens"`
-	CompletionTokensDetails TokenDetails `json:"completion_tokens_details"`
-	PromptTokens            int          `json:"prompt_tokens"`
-	PromptTokensDetails     TokenDetails `json:"prompt_tokens_details"`
-	TotalTokens             int          `json:"total_tokens"`
-}
-
-// TokenDetails represents details of token usage
-type TokenDetails struct {
-	AcceptedPredictionTokens int `json:"accepted_prediction_tokens"`
-	AudioTokens              int `json:"audio_tokens"`
-	ReasoningTokens          int `json:"reasoning_tokens"`
-	RejectedPredictionTokens int `json:"rejected_prediction_tokens"`
-	CachedTokens             int `json:"cached_tokens,omitempty"`
-}
+const inputSubsFileName = "./15-jap.ass"
 
 func sendOpenAIRequest(body OpenAIAPIRequest) (GPTResponse, error) {
 	gptResponse := GPTResponse{}
@@ -237,7 +173,11 @@ func fixJson(content string) string {
 	return content[start : end+1]
 }
 
-func createNewSubsFile(subs *astisub.Subtitles, newSubtitlesStringArray []string) {
+func createNewSubsFile(
+	subs *astisub.Subtitles,
+	newSubtitlesStringArray []string,
+	filetype SubsFileType,
+) {
 	newSubs := make([]*astisub.Item, len(subs.Items))
 	copy(newSubs, subs.Items)
 
@@ -348,20 +288,18 @@ func main() {
 			text = subs.Items[currentBatch].String()
 		}
 
-		resp, err := sendOpenAIRequest(OpenAIAPIRequest{
+		openAiApiReq := OpenAIAPIRequest{
 			Model: "chatgpt-4o-latest",
 			Store: true,
-			Messages: []RequestMessage{
-				{
-					Role: "user",
-					Content: fmt.Sprintf(
-						"%s\n\n%s",
-						prompt,
-						text,
-					),
-				},
-			},
-		})
+			Messages: GetConverstaionMessages(RequestMessage{
+				Role:    "user",
+				Content: text,
+			}),
+		}
+
+		// SpewPrinter.Dump(openAiApiReq.Messages)
+
+		resp, err := sendOpenAIRequest(openAiApiReq)
 
 		if err != nil {
 			errCount++
@@ -412,5 +350,13 @@ func main() {
 
 	writeSubsStringArrayToFile(newSubtitlesStringArray, currentBatch*batchSize, len(subs.Items))
 
-	createNewSubsFile(subs, newSubtitlesStringArray)
+	fileType := SubsFileTypeSRT
+
+	idx := strings.LastIndex(inputSubsFileName, ".")
+
+	if inputSubsFileName[idx+1:] == SubsFileTypeASS {
+		fileType = SubsFileTypeASS
+	}
+
+	createNewSubsFile(subs, newSubtitlesStringArray, fileType)
 }

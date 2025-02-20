@@ -1,3 +1,5 @@
 *.srt
+*.ass
+*.ssa
 *.env
 *.json
