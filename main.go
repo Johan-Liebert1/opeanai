@@ -22,9 +22,11 @@ const (
 	SubsFileTypeASS = "ass"
 )
 
+const SaveAsASS = true
+
 var SpewPrinter = spew.ConfigState{Indent: "    ", MaxDepth: 5}
 
-const inputSubsFileName = "./15-jap.ass"
+const inputSubsFileName = "./10-jap.srt"
 
 func sendOpenAIRequest(body OpenAIAPIRequest) (GPTResponse, error) {
 	gptResponse := GPTResponse{}
@@ -88,7 +90,7 @@ func sendOpenAIRequest(body OpenAIAPIRequest) (GPTResponse, error) {
 		return gptResponse, nil
 	}
 
-	response := map[string]interface{}{}
+	response := map[string]any{}
 
 	err = json.Unmarshal(respBody, &response)
 
@@ -129,7 +131,7 @@ func writeSubsStringArrayToFile(subs []string, start, batch int) {
 	SpewPrinter.Dump(subs)
 
 	f, err := os.OpenFile(
-		fmt.Sprintf("subsStrings-(%d)-start-%d-end-%d.json", time.Now(), start, batch),
+		fmt.Sprintf("subsStrings-start-%d-end-%d.json", start, batch),
 		os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
 		0644,
 	)
@@ -195,8 +197,8 @@ func createNewSubsFile(
 		newSubs[i].Lines = lines
 	}
 
-	s := astisub.Subtitles{Items: newSubs}
-	s.Write("./newthing.srt")
+	s := astisub.Subtitles{Items: newSubs, Metadata: &astisub.Metadata{}}
+	s.Write(fmt.Sprintf("./newthing.%s", filetype))
 }
 
 func handleArgs() {
@@ -233,7 +235,32 @@ func handleArgs() {
 				return
 			}
 
-			createNewSubsFile(subs, newSubtitlesStringArray)
+			fileType := SubsFileTypeSRT
+
+			idx := strings.LastIndex(inputSubsFileName, ".")
+
+			if inputSubsFileName[idx+1:] == SubsFileTypeASS || SaveAsASS {
+				fileType = SubsFileTypeASS
+			}
+
+			createNewSubsFile(subs, newSubtitlesStringArray, fileType)
+		}
+
+	case "convert":
+		{
+			if len(os.Args) != 3 {
+				fmt.Printf("Usage: ./exe convert <original subs file>\n")
+				return
+			}
+
+			subs := getSubtitles(os.Args[2])
+
+			fname := strings.LastIndex(os.Args[2], ".")
+			outputFname := os.Args[2][:fname] + ".ass"
+
+            subs.Metadata = &astisub.Metadata{}
+
+			subs.Write(fmt.Sprintf("%s", outputFname))
 		}
 
 	default:
@@ -354,7 +381,7 @@ func main() {
 
 	idx := strings.LastIndex(inputSubsFileName, ".")
 
-	if inputSubsFileName[idx+1:] == SubsFileTypeASS {
+	if inputSubsFileName[idx+1:] == SubsFileTypeASS || SaveAsASS {
 		fileType = SubsFileTypeASS
 	}
 

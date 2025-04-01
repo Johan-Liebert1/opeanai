@@ -7,6 +7,7 @@ If the provided text is not Japanese, return it as is.
 The text is supposed to be used as subtitles, so make sure it follows a conversational flow.
 Do not include the original Japanese text, only the Hiragana, Romaji and the English translation.
 Example - INPUT = "私", OUTPUT = "わたし\nwatashi\nI". 
+Only output the translation for the latest sentence in the chat, don't repeat translations.
 ALWAYS CONVERT THE ENTIRE TEXT. DON'T GIVE ME MARKDOWN OR ANY OTHER FORMAT, I WANT THE ANSWER IN PLAIN TEXT FORMAT. 
 `
 
