@@ -26,7 +26,7 @@ const SaveAsASS = true
 
 var SpewPrinter = spew.ConfigState{Indent: "    ", MaxDepth: 5}
 
-const inputSubsFileName = "./10-jap.srt"
+const inputSubsFileName = "./13-jap.srt"
 
 func sendOpenAIRequest(body OpenAIAPIRequest) (GPTResponse, error) {
 	gptResponse := GPTResponse{}
@@ -258,7 +258,7 @@ func handleArgs() {
 			fname := strings.LastIndex(os.Args[2], ".")
 			outputFname := os.Args[2][:fname] + ".ass"
 
-            subs.Metadata = &astisub.Metadata{}
+			subs.Metadata = &astisub.Metadata{}
 
 			subs.Write(fmt.Sprintf("%s", outputFname))
 		}
@@ -345,6 +345,12 @@ func main() {
 		errCount = 0
 
 		content := resp.Choices[0].Message.Content
+
+		// Also send the assistant message back as apperantly it can lose context
+		chatMessages = append(chatMessages, RequestMessage{
+			Role:    "assistant",
+			Content: content,
+		})
 
 		if isJson {
 			content = fixJson(content)

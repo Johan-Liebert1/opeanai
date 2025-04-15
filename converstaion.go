@@ -74,12 +74,15 @@ var chatMessages []RequestMessage = []RequestMessage{
 	},
 }
 
-// Will send maximum of 10 messages with rolling window
-const MaxConvLen = 10
+// Will send maximum of this many messages with rolling window
+const MaxConvLen = 16
 
 func GetConverstaionMessages(newMessage RequestMessage) []RequestMessage {
-	if len(chatMessages)-1 > MaxConvLen {
-		chatMessages = append(chatMessages[:1], chatMessages[2:]...)
+	// Keep the system message at index 0
+	if len(chatMessages) > MaxConvLen {
+		// Drop from index 1 (preserve system)
+        // dropping idx 1 and 2 as idx 1 will be user prompt, and idx 2 will be assistant answer
+		chatMessages = append(chatMessages[:1], chatMessages[3:]...)
 	}
 
 	chatMessages = append(chatMessages, newMessage)
