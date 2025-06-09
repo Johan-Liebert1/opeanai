@@ -26,7 +26,7 @@ const SaveAsASS = true
 
 var SpewPrinter = spew.ConfigState{Indent: "    ", MaxDepth: 5}
 
-const inputSubsFileName = "./13-jap.srt"
+const inputSubsFileName = "./1.srt"
 
 func sendOpenAIRequest(body OpenAIAPIRequest) (GPTResponse, error) {
 	gptResponse := GPTResponse{}
@@ -276,6 +276,21 @@ func main() {
 		handleArgs()
 		return
 	}
+
+	if Romaji {
+		DEV_PROMPT = DEV_PROMPT_ROMAJI
+	} else {
+		DEV_PROMPT = DEV_PROMPT_NON_ROMAJI
+	}
+
+	chatMessages = []RequestMessage{
+		{
+			Role:    "developer",
+			Content: DEV_PROMPT,
+		},
+	}
+
+	fmt.Println(DEV_PROMPT)
 
 	isJson := false
 

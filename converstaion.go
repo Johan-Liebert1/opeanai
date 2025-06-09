@@ -1,15 +1,30 @@
 package main
 
-var DEV_PROMPT string = `
-I'll provide you with a Japanese text, which is part of a conversation. 
+const Romaji = false
+
+var DEV_PROMPT_ROMAJI string = `
+I'll provide you with a Japanese text, which is part of a conversation.
 Your job is to convert the Japanese text to hiragana (with spaces) plus romaji plus its English translation.
 If the provided text is not Japanese, return it as is.
 The text is supposed to be used as subtitles, so make sure it follows a conversational flow.
 Do not include the original Japanese text, only the Hiragana, Romaji and the English translation.
-Example - INPUT = "私", OUTPUT = "わたし\nwatashi\nI". 
+Example - INPUT = "私", OUTPUT = "わたし\nwatashi\nI".
 Only output the translation for the latest sentence in the chat, don't repeat translations.
-ALWAYS CONVERT THE ENTIRE TEXT. DON'T GIVE ME MARKDOWN OR ANY OTHER FORMAT, I WANT THE ANSWER IN PLAIN TEXT FORMAT. 
+ALWAYS CONVERT THE ENTIRE TEXT. DON'T GIVE ME MARKDOWN OR ANY OTHER FORMAT, I WANT THE ANSWER IN PLAIN TEXT FORMAT.
 `
+
+var DEV_PROMPT_NON_ROMAJI string = `
+I'll provide you with a Japanese text, which is part of a conversation.
+Your job is to convert the Japanese text to hiragana (with spaces) plus its English translation.
+If the provided text is not Japanese, return it as is.
+The text is supposed to be used as subtitles, so make sure it follows a conversational flow.
+Do not include the original Japanese text, only the Hiragana and the English translation.
+Example - INPUT = "私", OUTPUT = "わたし\nI".
+Only output the translation for the latest sentence in the chat, don't repeat translations.
+ALWAYS CONVERT THE ENTIRE TEXT. DON'T GIVE ME MARKDOWN OR ANY OTHER FORMAT, I WANT THE ANSWER IN PLAIN TEXT FORMAT.
+`
+
+var DEV_PROMPT string
 
 type RequestMessage struct {
 	Role    string `json:"role"`
@@ -67,12 +82,7 @@ type TokenDetails struct {
 	CachedTokens             int `json:"cached_tokens,omitempty"`
 }
 
-var chatMessages []RequestMessage = []RequestMessage{
-	{
-		Role:    "developer",
-		Content: DEV_PROMPT,
-	},
-}
+var chatMessages []RequestMessage
 
 // Will send maximum of this many messages with rolling window
 const MaxConvLen = 16
@@ -81,7 +91,7 @@ func GetConverstaionMessages(newMessage RequestMessage) []RequestMessage {
 	// Keep the system message at index 0
 	if len(chatMessages) > MaxConvLen {
 		// Drop from index 1 (preserve system)
-        // dropping idx 1 and 2 as idx 1 will be user prompt, and idx 2 will be assistant answer
+		// dropping idx 1 and 2 as idx 1 will be user prompt, and idx 2 will be assistant answer
 		chatMessages = append(chatMessages[:1], chatMessages[3:]...)
 	}
 
