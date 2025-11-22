@@ -1,1 +1,3 @@
-go run ./main.go ./converstaion.go
+#!/bin/bash
+
+go run ./main.go ./converstaion.go "${@}"

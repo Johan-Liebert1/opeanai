@@ -25,8 +25,7 @@ const (
 const SaveAsASS = true
 
 var SpewPrinter = spew.ConfigState{Indent: "    ", MaxDepth: 5}
-
-const inputSubsFileName = "./1.srt"
+var inputSubsFileName string
 
 func sendOpenAIRequest(body OpenAIAPIRequest) (GPTResponse, error) {
 	gptResponse := GPTResponse{}
@@ -201,7 +200,8 @@ func createNewSubsFile(
 	s.Write(fmt.Sprintf("./newthing.%s", filetype))
 }
 
-func handleArgs() {
+// returns whether to exit program or not
+func handleArgs() bool {
 	arg := os.Args[1]
 
 	switch arg {
@@ -210,7 +210,7 @@ func handleArgs() {
 		{
 			if len(os.Args) != 4 {
 				fmt.Printf("Usage: ./exe write <original subs file> <subs json file>\n")
-				return
+				return true
 			}
 
 			subs := getSubtitles(os.Args[2])
@@ -219,7 +219,7 @@ func handleArgs() {
 
 			if err != nil {
 				fmt.Printf("Failed to read file '%s', with err: %+v\n", os.Args[3], err)
-				return
+				return true
 			}
 
 			newSubtitlesStringArray := []string{}
@@ -232,7 +232,7 @@ func handleArgs() {
 					os.Args[3],
 					err,
 				)
-				return
+				return true
 			}
 
 			fileType := SubsFileTypeSRT
@@ -250,7 +250,7 @@ func handleArgs() {
 		{
 			if len(os.Args) != 3 {
 				fmt.Printf("Usage: ./exe convert <original subs file>\n")
-				return
+				return true
 			}
 
 			subs := getSubtitles(os.Args[2])
@@ -265,16 +265,19 @@ func handleArgs() {
 
 	default:
 		{
-			fmt.Printf("Arg: '%s' not handled\n", arg)
-			return
+			inputSubsFileName = arg
+			return false
 		}
 	}
+
+	return true
 }
 
 func main() {
 	if len(os.Args) > 1 {
-		handleArgs()
-		return
+		if handleArgs() {
+			return
+		}
 	}
 
 	if Romaji {
@@ -289,8 +292,6 @@ func main() {
 			Content: DEV_PROMPT,
 		},
 	}
-
-	fmt.Println(DEV_PROMPT)
 
 	isJson := false
 
