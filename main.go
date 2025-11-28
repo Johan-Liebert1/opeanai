@@ -281,15 +281,15 @@ func main() {
 	}
 
 	if Romaji {
-		DEV_PROMPT = DEV_PROMPT_ROMAJI
+		DevPrompt = DevPromptRomaji
 	} else {
-		DEV_PROMPT = DEV_PROMPT_NON_ROMAJI
+		DevPrompt = DevPromptNonRomaji
 	}
 
 	chatMessages = []RequestMessage{
 		{
 			Role:    "developer",
-			Content: DEV_PROMPT,
+			Content: DevPrompt,
 		},
 	}
 

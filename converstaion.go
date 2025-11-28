@@ -2,7 +2,7 @@ package main
 
 const Romaji = false
 
-var DEV_PROMPT_ROMAJI string = `
+const DevPromptRomaji string = `
 I'll provide you with a Japanese text, which is part of a conversation.
 Your job is to convert the Japanese text to hiragana (with spaces) plus romaji plus its English translation.
 If the provided text is not Japanese, return it as is.
@@ -13,18 +13,18 @@ Only output the translation for the latest sentence in the chat, don't repeat tr
 ALWAYS CONVERT THE ENTIRE TEXT. DON'T GIVE ME MARKDOWN OR ANY OTHER FORMAT, I WANT THE ANSWER IN PLAIN TEXT FORMAT.
 `
 
-var DEV_PROMPT_NON_ROMAJI string = `
+const DevPromptNonRomaji string = `
 I'll provide you with a Japanese text, which is part of a conversation.
 Your job is to convert the Japanese text to hiragana (with spaces) plus its English translation.
-If the provided text is not Japanese, return it as is.
+If the provided text is not Japanese, return it as is. Use katakana whereever necessary.
 The text is supposed to be used as subtitles, so make sure it follows a conversational flow.
-Do not include the original Japanese text, only the Hiragana and the English translation.
+Do not include the original Japanese text, only the Hiragana/Katakana and the English translation.
 Example - INPUT = "私", OUTPUT = "わたし\nI".
 Only output the translation for the latest sentence in the chat, don't repeat translations.
 ALWAYS CONVERT THE ENTIRE TEXT. DON'T GIVE ME MARKDOWN OR ANY OTHER FORMAT, I WANT THE ANSWER IN PLAIN TEXT FORMAT.
 `
 
-var DEV_PROMPT string
+var DevPrompt string
 
 type RequestMessage struct {
 	Role    string `json:"role"`
